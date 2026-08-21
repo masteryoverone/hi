@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.vercel
+out
+build
+*.log
+.DS_Store
+discord-bot
+lua/lua-5.1.5
+lua/lua.tar.gz
+lua/bin
+web/node_modules
+web/.next
