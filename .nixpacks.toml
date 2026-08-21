@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "gcc", "gnumake", "readline", "ncurses"]
+
+[phases.build]
+cmds = ["cd web && npm ci && npm run build"]
+
+[start]
+cmd = "cd web && npm start"
