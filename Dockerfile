@@ -4,7 +4,7 @@ WORKDIR /app
 # Install Lua 5.1 and build tools
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    lua5.1 gcc gmake make libreadline-dev && \
+    lua5.1 gcc make libreadline-dev && \
     ln -sf /usr/bin/lua5.1 /usr/bin/lua && \
     rm -rf /var/lib/apt/lists/*
 
