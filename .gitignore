@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+build/
+*.log
+.env*.local
+.vercel/
+.DS_Store
+*.obfuscated.lua
+*.obf.lua
+lua/lua-5.1.5/
+lua/lua.tar.gz
+lua/bin/
+discord-bot/

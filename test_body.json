@@ -1,0 +1,10 @@
+﻿{
+    "messages":  [
+                     {
+                         "content":  "Say hello in one word",
+                         "role":  "user"
+                     }
+                 ],
+    "model":  "blackboxai/minimax/minimax-m2.5",
+    "max_tokens":  20
+}

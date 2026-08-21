@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+build
+*.log
+.env*.local
+.vercel
+lua/
+lua-staging/
+.DS_Store
+*.obf.lua

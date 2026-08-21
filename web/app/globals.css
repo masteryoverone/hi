@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 205, 214, 244;
+  --background-rgb: 30, 30, 46;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Prevent iOS double-tap zoom and pull-to-refresh interference */
+html, body {
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+/* dvh fallback for the app shell */
+.h-dvh {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Grid Paper Background - Subtle */
+.grid-background {
+  background-image:
+    linear-gradient(rgba(243, 156, 18, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(243, 156, 18, 0.02) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Sublime-style Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e1e2e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #45475a;
+  border-radius: 4px;
+  border: 2px solid #1e1e2e;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #585b70;
+}
+
+::-webkit-scrollbar-corner {
+  background: #1e1e2e;
+}
+
+/* Text Selection */
+::selection {
+  background: rgba(243, 156, 18, 0.25);
+  color: #cdd6f4;
+}
+
+textarea::selection {
+  background: rgba(243, 156, 18, 0.25);
+}
+
+/* Textarea styling */
+textarea {
+  scrollbar-width: thin;
+  scrollbar-color: #45475a #1e1e2e;
+}
+
+textarea:focus {
+  outline: none;
+}
+
+/* Code font */
+code, pre, textarea {
+  font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out forwards;
+}
+
+/* Drop Zone */
+.drop-zone-active {
+  background: rgba(243, 156, 18, 0.05);
+}
+
+/* Glow */
+.glow-orange {
+  box-shadow: 0 0 20px rgba(243, 156, 18, 0.15), 0 0 60px rgba(243, 156, 18, 0.05);
+}
+
+/* Smooth transitions */
+button, a {
+  transition: all 0.15s ease;
+}
+
+/* No outline on focus for buttons */
+button:focus {
+  outline: none;
+}
+
+button:focus-visible {
+  outline: 1px solid rgba(243, 156, 18, 0.5);
+  outline-offset: -1px;
+}
+
+textarea:focus-visible {
+  outline: none;
+}
