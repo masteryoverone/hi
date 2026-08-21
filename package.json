@@ -1,0 +1,8 @@
+{
+  "name": "hephaestus",
+  "private": true,
+  "scripts": {
+    "build": "cd web && npm run build",
+    "start": "cd web && npm start"
+  }
+}
