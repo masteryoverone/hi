@@ -29,4 +29,5 @@ RUN cd web && node scripts/stage-lua.js && npx next build
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "cd web && npm start"]
+WORKDIR /app/web
+CMD ["npm", "start"]
