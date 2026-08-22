@@ -78,7 +78,7 @@ function SyntaxHighlighter({ code }) {
                 switch (token.type) {
                     case 'keyword': className = 'text-[#cba6f7] font-semibold'; break;
                     case 'builtin': className = 'text-[#89b4fa]'; break;
-                    case 'string': className = 'text=[#a6e3a1]'; break;
+                    case 'string': className = 'text-[#a6e3a1]'; break;
                     case 'comment': className = 'text-[#585b70] italic'; break;
                     case 'number': className = 'text-[#fab387]'; break;
                     default: className = 'text-[#cdd6f4]';
@@ -89,16 +89,16 @@ function SyntaxHighlighter({ code }) {
     );
 }
 
-function VirtualLineNumbers({ containerRef, totalLines, isTiny, scrollPaddingTop = 8 }) {
+function VirtualLineNumbers({ scrollRef, totalLines, isTiny, paddingTop = 8 }) {
     const [range, setRange] = useState({ start: 0, end: 80 });
     useEffect(() => {
-        const el = containerRef?.current;
+        const el = scrollRef?.current;
         if (!el) return;
         const calc = () => {
             const st = el.scrollTop;
             const vh = el.clientHeight;
-            const start = Math.max(0, Math.floor((st - scrollPaddingTop) / LINE_HEIGHT) - LN_BUFFER);
-            const end = Math.min(totalLines, Math.ceil((st - scrollPaddingTop + vh) / LINE_HEIGHT) + LN_BUFFER);
+            const start = Math.max(0, Math.floor((st - paddingTop) / LINE_HEIGHT) - LN_BUFFER);
+            const end = Math.min(totalLines, Math.ceil((st - paddingTop + vh) / LINE_HEIGHT) + LN_BUFFER);
             setRange(prev => (prev.start === start && prev.end === end) ? prev : { start, end });
         };
         calc();
@@ -106,7 +106,7 @@ function VirtualLineNumbers({ containerRef, totalLines, isTiny, scrollPaddingTop
         const ro = new ResizeObserver(calc);
         ro.observe(el);
         return () => { el.removeEventListener('scroll', calc); ro.disconnect(); };
-    }, [containerRef, totalLines, scrollPaddingTop]);
+    }, [scrollRef, totalLines, paddingTop]);
     const items = [];
     for (let i = range.start; i < range.end; i++) {
         items.push(
@@ -116,7 +116,7 @@ function VirtualLineNumbers({ containerRef, totalLines, isTiny, scrollPaddingTop
         );
     }
     return (
-        <div className="pt-2 pr-1 text-right" style={{ paddingTop: range.start * LINE_HEIGHT + 8 }}>
+        <div className="pt-2 pr-1 text-right" style={{ paddingTop, minHeight: totalLines * LINE_HEIGHT }}>
             {items}
         </div>
     );
@@ -138,6 +138,7 @@ export default function Home() {
     const renameInputRef = useRef(null);
     const editorScrollRef = useRef(null);
     const outputScrollRef = useRef(null);
+    const highlightOverlayRef = useRef(null);
     const device = useDevice();
 
     const activeTab = tabs.find(t => t.active) || tabs[0];
@@ -492,37 +493,42 @@ export default function Home() {
                     >
                         {activeTab?.output ? (
                             // Output View
-                            <div className="flex-1 flex flex-col overflow-hidden">
-                                <div className="flex-1 flex overflow-hidden">
-                                    <div className={`${device.isTiny ? 'w-7' : 'w-10'} bg-[#1e1e2e] border-r border-[#11111b] overflow-hidden select-none flex-shrink-0`}>
-                                        <VirtualLineNumbers containerRef={outputScrollRef} totalLines={outputLines} isTiny={device.isTiny} />
+                            <div ref={outputScrollRef} className="flex-1 overflow-auto">
+                                <div className="flex">
+                                    <div className={`${device.isTiny ? 'w-7' : 'w-10'} bg-[#1e1e2e] border-r border-[#11111b] select-none flex-shrink-0`}>
+                                        <VirtualLineNumbers scrollRef={outputScrollRef} totalLines={outputLines} isTiny={device.isTiny} />
                                     </div>
-                                    <pre ref={outputScrollRef} className={`flex-1 bg-[#1e1e2e] text-[#a6e3a1] font-mono ${device.isTiny ? 'text-[11px]' : 'text-[12px]'} leading-[20px] p-2 overflow-auto whitespace-pre-wrap break-all`}>
+                                    <pre className={`flex-1 bg-[#1e1e2e] text-[#a6e3a1] font-mono ${device.isTiny ? 'text-[11px]' : 'text-[12px]'} leading-[20px] p-2 whitespace-pre-wrap break-all`}>
                                         {activeTab.output}
                                     </pre>
                                 </div>
                             </div>
                         ) : (
                             // Editor View
-                            <div className="flex-1 flex flex-col overflow-hidden">
-                                <div className="flex-1 flex overflow-hidden relative">
-                                    <div className={`${device.isTiny ? 'w-7' : 'w-10'} bg-[#1e1e2e] border-r border-[#11111b] overflow-hidden select-none flex-shrink-0`}>
-                                        <VirtualLineNumbers containerRef={editorScrollRef} totalLines={lineCount} isTiny={device.isTiny} />
+                            <div className="flex-1 flex overflow-hidden relative">
+                                <div className={`${device.isTiny ? 'w-7' : 'w-10'} bg-[#1e1e2e] border-r border-[#11111b] select-none flex-shrink-0 overflow-hidden`}>
+                                    <VirtualLineNumbers scrollRef={editorScrollRef} totalLines={lineCount} isTiny={device.isTiny} />
+                                </div>
+                                <div className="flex-1 relative overflow-hidden">
+                                    <div ref={highlightOverlayRef} className={`absolute inset-0 p-2 font-mono ${device.isTiny ? 'text-[11px]' : 'text-[12px]'} leading-[20px] pointer-events-none overflow-hidden whitespace-pre z-0`}>
+                                        <SyntaxHighlighter code={activeTab?.code || ''} />
                                     </div>
-                                    <div className="flex-1 relative overflow-hidden">
-                                        {/* Syntax highlighted overlay */}
-                                        <div className={`absolute inset-0 p-2 font-mono ${device.isTiny ? 'text-[11px]' : 'text-[12px]'} leading-[20px] pointer-events-none overflow-hidden whitespace-pre-wrap break-all z-0`}>
-                                            <SyntaxHighlighter code={activeTab?.code || ''} />
-                                        </div>
-                                        <textarea
-                                            ref={editorScrollRef}
-                                            value={activeTab?.code || ''}
-                                            onChange={(e) => updateActiveTab('code', e.target.value)}
-                                            className={`absolute inset-0 w-full h-full p-2 bg-transparent text-transparent caret-[#f5e0dc] font-mono ${device.isTiny ? 'text-[11px]' : 'text-[12px]'} leading-[20px] resize-none outline-none overflow-auto whitespace-pre-wrap z-10`}
-                                            spellCheck={false}
-                                            placeholder="-- Paste your Lua code here..."
-                                        />
-                                    </div>
+                                    <textarea
+                                        ref={editorScrollRef}
+                                        value={activeTab?.code || ''}
+                                        onChange={(e) => updateActiveTab('code', e.target.value)}
+                                        onScroll={(e) => {
+                                            const st = e.target.scrollTop;
+                                            const sl = e.target.scrollLeft;
+                                            if (highlightOverlayRef.current) {
+                                                highlightOverlayRef.current.scrollTop = st;
+                                                highlightOverlayRef.current.scrollLeft = sl;
+                                            }
+                                        }}
+                                        className={`absolute inset-0 w-full h-full p-2 bg-transparent text-transparent caret-[#f5e0dc] font-mono ${device.isTiny ? 'text-[11px]' : 'text-[12px]'} leading-[20px] resize-none outline-none overflow-auto whitespace-pre z-10`}
+                                        spellCheck={false}
+                                        placeholder="-- Paste your Lua code here..."
+                                    />
                                 </div>
                                 {dragOver && (
                                     <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
