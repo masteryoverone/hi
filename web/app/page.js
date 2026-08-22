@@ -12,6 +12,8 @@ const luaString = /(["'])(?:(?=(\\?))\2.)*?\1/g;
 const luaComment = /--\[\[[\s\S]*?\]\]|--.*/g;
 const luaNumber = /\b\d+\.?\d*\b/g;
 const luaFunction = /\b([a-zA-Z_]\w*)\s*\(/g;
+const LINE_HEIGHT = 20;
+const LN_BUFFER = 20;
 
 function highlightLua(code) {
     if (!code) return [];
@@ -65,7 +67,10 @@ function highlightLua(code) {
 }
 
 function SyntaxHighlighter({ code }) {
-    const tokens = useMemo(() => highlightLua(code), [code]);
+    const tokens = useMemo(() => {
+        if (!code || code.length > 15000) return [{ text: code || '', type: 'plain' }];
+        return highlightLua(code);
+    }, [code]);
     return (
         <span>
             {tokens.map((token, i) => {
@@ -84,6 +89,39 @@ function SyntaxHighlighter({ code }) {
     );
 }
 
+function VirtualLineNumbers({ containerRef, totalLines, isTiny, scrollPaddingTop = 8 }) {
+    const [range, setRange] = useState({ start: 0, end: 80 });
+    useEffect(() => {
+        const el = containerRef?.current;
+        if (!el) return;
+        const calc = () => {
+            const st = el.scrollTop;
+            const vh = el.clientHeight;
+            const start = Math.max(0, Math.floor((st - scrollPaddingTop) / LINE_HEIGHT) - LN_BUFFER);
+            const end = Math.min(totalLines, Math.ceil((st - scrollPaddingTop + vh) / LINE_HEIGHT) + LN_BUFFER);
+            setRange(prev => (prev.start === start && prev.end === end) ? prev : { start, end });
+        };
+        calc();
+        el.addEventListener('scroll', calc, { passive: true });
+        const ro = new ResizeObserver(calc);
+        ro.observe(el);
+        return () => { el.removeEventListener('scroll', calc); ro.disconnect(); };
+    }, [containerRef, totalLines, scrollPaddingTop]);
+    const items = [];
+    for (let i = range.start; i < range.end; i++) {
+        items.push(
+            <div key={i} className={`${isTiny ? 'text-[9px]' : 'text-[10px]'} text-[#585b70] pr-1`} style={{ height: LINE_HEIGHT, lineHeight: `${LINE_HEIGHT}px` }}>
+                {i + 1}
+            </div>
+        );
+    }
+    return (
+        <div className="pt-2 pr-1 text-right" style={{ paddingTop: range.start * LINE_HEIGHT + 8 }}>
+            {items}
+        </div>
+    );
+}
+
 export default function Home() {
     const [tabs, setTabs] = useState([
         { id: 1, name: 'untitled.lua', code: '', output: null, active: true }
@@ -98,6 +136,8 @@ export default function Home() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const fileInputRef = useRef(null);
     const renameInputRef = useRef(null);
+    const editorScrollRef = useRef(null);
+    const outputScrollRef = useRef(null);
     const device = useDevice();
 
     const activeTab = tabs.find(t => t.active) || tabs[0];
@@ -454,14 +494,10 @@ export default function Home() {
                             // Output View
                             <div className="flex-1 flex flex-col overflow-hidden">
                                 <div className="flex-1 flex overflow-hidden">
-                                    <div className={`${device.isTiny ? 'w-7' : 'w-10'} bg-[#1e1e2e] border-r border-[#11111b] overflow-hidden select-none`}>
-                                        <div className="pt-2 pr-1 text-right">
-                                            {Array.from({ length: outputLines }, (_, i) => (
-                                                <div key={i} className={`${device.isTiny ? 'text-[9px]' : 'text-[10px]'} leading-[20px] text-[#585b70] pr-1`}>{i + 1}</div>
-                                            ))}
-                                        </div>
+                                    <div className={`${device.isTiny ? 'w-7' : 'w-10'} bg-[#1e1e2e] border-r border-[#11111b] overflow-hidden select-none flex-shrink-0`}>
+                                        <VirtualLineNumbers containerRef={outputScrollRef} totalLines={outputLines} isTiny={device.isTiny} />
                                     </div>
-                                    <pre className={`flex-1 bg-[#1e1e2e] text-[#a6e3a1] font-mono ${device.isTiny ? 'text-[11px]' : 'text-[12px]'} leading-[20px] p-2 overflow-auto whitespace-pre-wrap break-all`}>
+                                    <pre ref={outputScrollRef} className={`flex-1 bg-[#1e1e2e] text-[#a6e3a1] font-mono ${device.isTiny ? 'text-[11px]' : 'text-[12px]'} leading-[20px] p-2 overflow-auto whitespace-pre-wrap break-all`}>
                                         {activeTab.output}
                                     </pre>
                                 </div>
@@ -470,12 +506,8 @@ export default function Home() {
                             // Editor View
                             <div className="flex-1 flex flex-col overflow-hidden">
                                 <div className="flex-1 flex overflow-hidden relative">
-                                    <div className={`${device.isTiny ? 'w-7' : 'w-10'} bg-[#1e1e2e] border-r border-[#11111b] overflow-hidden select-none`}>
-                                        <div className="pt-2 pr-1 text-right">
-                                            {Array.from({ length: lineCount }, (_, i) => (
-                                                <div key={i} className={`${device.isTiny ? 'text-[9px]' : 'text-[10px]'} leading-[20px] text-[#585b70] pr-1`}>{i + 1}</div>
-                                            ))}
-                                        </div>
+                                    <div className={`${device.isTiny ? 'w-7' : 'w-10'} bg-[#1e1e2e] border-r border-[#11111b] overflow-hidden select-none flex-shrink-0`}>
+                                        <VirtualLineNumbers containerRef={editorScrollRef} totalLines={lineCount} isTiny={device.isTiny} />
                                     </div>
                                     <div className="flex-1 relative overflow-hidden">
                                         {/* Syntax highlighted overlay */}
@@ -483,6 +515,7 @@ export default function Home() {
                                             <SyntaxHighlighter code={activeTab?.code || ''} />
                                         </div>
                                         <textarea
+                                            ref={editorScrollRef}
                                             value={activeTab?.code || ''}
                                             onChange={(e) => updateActiveTab('code', e.target.value)}
                                             className={`absolute inset-0 w-full h-full p-2 bg-transparent text-transparent caret-[#f5e0dc] font-mono ${device.isTiny ? 'text-[11px]' : 'text-[12px]'} leading-[20px] resize-none outline-none overflow-auto whitespace-pre-wrap z-10`}
@@ -553,17 +586,12 @@ export default function Home() {
 
             {/* Loading Overlay */}
             {isLoading && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-[#1e1e2e] rounded-xl p-8 flex flex-col items-center gap-4 border border-[#313244] shadow-2xl animate-scale-in">
-                        <div className="w-14 h-14 rounded-full border-[3px] border-[#313244] border-t-orange-400 animate-spin" />
-                        <div className="text-center">
-                            <p className="text-sm font-medium text-[#cdd6f4]">Obfuscating</p>
-                            <p className="text-xs text-[#585b70] mt-1">Protecting your code...</p>
-                        </div>
-                        <div className="flex gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
+                    <div className="bg-[#1e1e2e] rounded-lg px-4 py-2.5 flex items-center gap-3 border border-orange-400/30 shadow-2xl">
+                        <div className="w-4 h-4 rounded-full border-2 border-[#313244] border-t-orange-400 animate-spin" />
+                        <div>
+                            <p className="text-[12px] font-medium text-[#cdd6f4]">Obfuscating</p>
+                            <p className="text-[10px] text-[#585b70]">Protecting your code...</p>
                         </div>
                     </div>
                 </div>
